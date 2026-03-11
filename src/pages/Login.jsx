@@ -3,41 +3,34 @@ import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-
 const Login = () => {
     const { currentUser } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
-
     useEffect(() => {
         if (currentUser) {
             navigate('/dashboard');
         }
     }, [currentUser, navigate]);
-
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            // Navigation handled by useEffect
         } catch (err) {
             setError('Failed to login: ' + err.message);
         }
     };
-
     const handleGoogleLogin = async () => {
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
-            // Navigation handled by useEffect
         } catch (err) {
             setError('Google login failed: ' + err.message);
         }
     };
-
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
@@ -74,5 +67,4 @@ const Login = () => {
         </div>
     );
 };
-
 export default Login;

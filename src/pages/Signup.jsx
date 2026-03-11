@@ -1,43 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase';
-
+import { auth } from '../firebase';
 const Signup = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
-
     const handleSignup = async (e) => {
         e.preventDefault();
         setError('');
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
             await updateProfile(user, { displayName: name });
-
-            // Create user document in Firestore
-            await setDoc(doc(db, "users", user.uid), {
-                name: name,
-                email: email,
-                profilePhoto: user.photoURL || "",
-                joinedDate: serverTimestamp(),
-                points: 0,
-                badges: [],
-                totalPosts: 0,
-                role: "user"
-            });
-
             navigate('/dashboard');
         } catch (err) {
             setError('Failed to create account: ' + err.message);
         }
     };
-
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
@@ -79,5 +61,4 @@ const Signup = () => {
         </div>
     );
 };
-
 export default Signup;

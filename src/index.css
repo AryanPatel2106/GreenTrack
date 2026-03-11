@@ -25,6 +25,58 @@ body {
   .glass-effect {
     @apply bg-white/80 backdrop-blur-md border-b border-white/20;
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  }
+
+  .nature-btn {
+    @apply active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:active:scale-100;
+  }
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes sway-slow {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes float-leaf {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(10px, -20px) rotate(45deg); }
+}
+
+@keyframes float-leaf-slow {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-15px, -10px) rotate(-30deg); }
+}
+
+.animate-sway {
+  animation: sway 6s ease-in-out infinite;
+}
+
+.animate-sway-slow {
+  animation: sway-slow 10s ease-in-out infinite;
+}
+
+.animate-float-leaf {
+  animation: float-leaf 8s ease-in-out infinite;
+}
+
+.animate-float-leaf-slow {
+  animation: float-leaf-slow 12s ease-in-out infinite;
 }
 
 @keyframes fadeIn {

@@ -1,69 +1,43 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-
 const AuthContext = createContext();
-
 export function useAuth() {
     return useContext(AuthContext);
 }
-
 export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // Monitor auth state changes
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Check if user doc exists
-                const { doc, getDoc, setDoc, serverTimestamp } = await import('firebase/firestore');
-                const { db } = await import('../firebase');
-                const { assignUserCommunity, getUserLocation } = await import('../utils/community');
-
-                const userRef = doc(db, "users", user.uid);
-                const docSnap = await getDoc(userRef);
-
-                if (!docSnap.exists()) {
-                    // New User: Try to get location and assign community
-                    let location = null;
+                try {
+                    const { default: api } = await import('../utils/api');
+                    const { getUserLocation, getCityFromCoords, findNearestCommunity } = await import('../utils/community');
+                    let communityId = 'global';
+                    let communityName = 'Global Earth Guardians';
                     try {
-                        location = await getUserLocation();
-                        console.log("Got user location:", location);
-                    } catch (locError) {
-                        console.warn("Location denied/failed, falling back to global:", locError);
+                        const loc = await getUserLocation();
+                        console.log("%c[Sync] Lat/Lng Detected:", "color: #10b981", loc.lat, loc.lng);
+                        const nearest = findNearestCommunity(loc.lat, loc.lng);
+                        if (nearest) {
+                            communityId = nearest.id;
+                            communityName = nearest.name;
+                            console.log(`%c[Sync] Proximity Match: ${communityName}`, "color: #10b981; font-weight: bold; border-left: 4px solid #10b981; padding-left: 8px;");
+                        }
+                    } catch (locErr) {
+                        console.warn("[Sync] Geolocation Position Unavailable. User will remain in Global team.");
                     }
-
-                    const community = await assignUserCommunity(user.uid, location);
-
-                    await setDoc(userRef, {
+                    await api.post('/users', {
                         name: user.displayName || 'Anonymous',
                         email: user.email,
                         photoURL: user.photoURL,
-                        points: 0,
-                        level: 1,
-                        xp: 0,
-                        treesPlanted: 0,
-                        verifiedPosts: 0,
-                        role: 'user',
-                        badges: [],
-                        // Community Fields
-                        communityId: community?.id || 'global',
-                        communityName: community?.name || 'Global Earth Guardians',
-                        createdAt: serverTimestamp()
+                        communityId,
+                        communityName
                     });
-                } else {
-                    // Existing User: Check if they have a community assigned, if not update them
-                    const userData = docSnap.data();
-                    if (!userData.communityId) {
-                        // Backfill community for existing users
-                        let location = null;
-                        try {
-                            location = await getUserLocation();
-                        } catch (e) { console.log('Location skip for backfill'); }
-
-                        await assignUserCommunity(user.uid, location);
-                    }
+                    console.log(`User synced with ${communityName}`);
+                } catch (apiErr) {
+                    console.error("Failed to sync user with backend:", apiErr);
                 }
             }
             setCurrentUser(user);
@@ -71,11 +45,9 @@ export function AuthProvider({ children }) {
         });
         return unsubscribe;
     }, []);
-
     const value = {
         currentUser
     };
-
     return (
         <AuthContext.Provider value={value}>
             {!loading && children}
