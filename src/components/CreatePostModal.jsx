@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { X, Camera, MapPin, Loader, Scan } from 'lucide-react';
 import ImageCropper from './ImageCropper'; // Assuming same directory or adjust path
 import GreenVisionScanner from './GreenVisionScanner';
+import LeafHealthScanner from './LeafHealthScanner';
 import { processFile } from '../utils/fileUtils';
 import api from '../utils/api';
 const CreatePostModal = ({ isOpen, onClose }) => {
@@ -19,6 +20,14 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     const [processingFile, setProcessingFile] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
     const [scanResults, setScanResults] = useState(null);
+
+    // Leaf specific state
+    const [leafImageFile, setLeafImageFile] = useState(null);
+    const [tempLeafImage, setTempLeafImage] = useState(null);
+    const [showLeafCropper, setShowLeafCropper] = useState(false);
+    const [showLeafScanner, setShowLeafScanner] = useState(false);
+    const [leafScanResults, setLeafScanResults] = useState(null);
+
     const handleFileSelect = async (e) => {
         if (e.target.files && e.target.files.length > 0) {
             setProcessingFile(true);
@@ -44,6 +53,34 @@ const CreatePostModal = ({ isOpen, onClose }) => {
         setImageFile(file);
         setShowCropper(false);
     };
+
+    const handleLeafFileSelect = async (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            setProcessingFile(true);
+            try {
+                const originalFile = e.target.files[0];
+                const processedFile = await processFile(originalFile);
+                const reader = new FileReader();
+                reader.addEventListener('load', () => {
+                    setTempLeafImage(reader.result);
+                    setShowLeafCropper(true);
+                    setProcessingFile(false);
+                });
+                reader.readAsDataURL(processedFile);
+            } catch (error) {
+                console.error("Leaf File processing error:", error);
+                alert(error.message);
+                setProcessingFile(false);
+            }
+        }
+    };
+
+    const handleLeafCropComplete = (croppedBlob) => {
+        const file = new File([croppedBlob], "leaf_cropped_image.jpg", { type: "image/jpeg" });
+        setLeafImageFile(file);
+        setShowLeafCropper(false);
+    };
+
     useEffect(() => {
         if (currentUser && isOpen) {
             const fetchData = async () => {
@@ -107,14 +144,36 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                     return;
                 }
             }
-            await createPostRecord(imageUrl);
+
+            let leafImageUrl = null;
+            if (leafImageFile) {
+                try {
+                    console.log("Starting leaf image upload...");
+                    const leafFormData = new FormData();
+                    leafFormData.append('file', leafImageFile);
+                    const leafUploadRes = await api.post('/upload', leafFormData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+                    leafImageUrl = leafUploadRes.data.url;
+                    console.log("Leaf Upload success, URL:", leafImageUrl);
+                } catch (error) {
+                    console.error("Leaf Upload failed:", error);
+                    setLoading(false);
+                    setUploadError(`Leaf Upload failed: ${error.response?.data || error.message}`);
+                    return;
+                }
+            }
+
+            await createPostRecord(imageUrl, leafImageUrl);
         } catch (error) {
             console.error("Error creating post", error);
             alert("Failed to create post: " + error.message);
             setLoading(false);
         }
     };
-    const createPostRecord = async (imageUrl) => {
+    const createPostRecord = async (imageUrl, leafImageUrl = null) => {
         const communityId = currentUserCommunityId;
         await api.post('/posts', {
             treeId: selectedTreeId,
@@ -125,7 +184,10 @@ const CreatePostModal = ({ isOpen, onClose }) => {
             locationLat: location.lat,
             locationLng: location.lng,
             aiSpecies: scanResults?.species || null,
-            isAiVerified: scanResults?.isVerified || false
+            isAiVerified: scanResults?.isVerified || false,
+            leafImageUrl: leafImageUrl,
+            leafHealthStatus: leafScanResults?.healthStatus || null,
+            isLeafHealthy: leafScanResults?.isHealthy || false
         });
         resetForm();
     };
@@ -136,9 +198,11 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     const resetForm = () => {
         setCaption('');
         setImageFile(null);
+        setLeafImageFile(null);
         setLocation(null);
         setSelectedTreeId('');
         setScanResults(null);
+        setLeafScanResults(null);
         setLoading(false);
         setUploadError(null);
         onClose();
@@ -167,6 +231,31 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                     onCancel={() => setShowScanner(false)}
                 />
             )}
+            
+            {showLeafCropper && (
+                <ImageCropper
+                    image={tempLeafImage}
+                    aspect={1} // Square aspect ratio typically good for leaves
+                    onComplete={handleLeafCropComplete}
+                    onCancel={() => setShowLeafCropper(false)}
+                />
+            )}
+            
+            {showLeafScanner && (
+                <LeafHealthScanner
+                    initialImage={tempLeafImage}
+                    onScanComplete={(results) => {
+                        setLeafScanResults(results);
+                        setShowLeafScanner(false);
+                        const statusBadge = results.isHealthy ? '🟩' : '🟧';
+                        if (results.healthStatus) {
+                            setCaption(prev => `${prev}\n\n[Health Analysis: ${statusBadge} ${results.healthStatus}]`.trim());
+                        }
+                    }}
+                    onCancel={() => setShowLeafScanner(false)}
+                />
+            )}
+            
             <div
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-fade-in"
                 onClick={onClose}
@@ -238,7 +327,44 @@ const CreatePostModal = ({ isOpen, onClose }) => {
                             </button>
                         )}
                     </div>
-                    { }
+
+                    {}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Leaf Health Scan (Optional)</label>
+                        <label className="relative group cursor-pointer block">
+                            <div className={`w-full h-24 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 ${leafImageFile ? 'bg-cyan-50 border-cyan-200' : 'bg-slate-50 border-slate-100 group-hover:bg-slate-100 group-hover:border-slate-200'}`}>
+                                {leafImageFile ? (
+                                    <div className="text-center">
+                                        <div className="text-cyan-500 font-black text-[10px] uppercase truncate max-w-[200px] mb-1">{leafImageFile.name}</div>
+                                        <div className="text-[8px] text-cyan-400 font-bold uppercase">Ready for Analysis</div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Camera className="w-5 h-5 text-slate-300 group-hover:text-cyan-500 transition-colors" />
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Upload Leaf Image</span>
+                                    </>
+                                )}
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLeafFileSelect}
+                                className="hidden"
+                            />
+                        </label>
+                        
+                        {leafImageFile && (
+                            <button
+                                type="button"
+                                onClick={() => setShowLeafScanner(true)}
+                                className={`w-full border rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 nature-btn ${leafScanResults ? (leafScanResults.isHealthy ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-amber-50 border-amber-200 text-amber-600') : 'bg-cyan-50 border-cyan-200 text-cyan-600 hover:bg-cyan-100'}`}
+                            >
+                                <Scan className="w-4 h-4" />
+                                {leafScanResults ? leafScanResults.healthStatus : 'Scan Leaf Health'}
+                            </button>
+                        )}
+                    </div>
+
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Caption</label>
                         <textarea

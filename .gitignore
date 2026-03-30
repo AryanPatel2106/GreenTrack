@@ -21,4 +21,16 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+# Secrets
+.env
+.env.local
+*.json
+!package.json
+!composer.json
+!serviceAccountKey.json.example
+
+# Firebase
+serviceAccountKey.json
+
+# Local Uploads
+server/uploads/

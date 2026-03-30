@@ -4,6 +4,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { MapPin, CheckCircle2, Clock, ThumbsUp, MessageCircle, MoreHorizontal, Trash2, Scan } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../firebase';
+
+const formatDate = (dateValue) => {
+    if (!dateValue) return null;
+    if (typeof dateValue === 'object' && dateValue.seconds !== undefined) {
+        return new Date(dateValue.seconds * 1000);
+    }
+    const date = new Date(dateValue);
+    return isNaN(date.getTime()) ? null : date;
+};
+
 const PostCard = ({ post }) => {
     const { currentUser } = useAuth();
     const [isLiked, setIsLiked] = useState(false);
@@ -96,7 +106,7 @@ const PostCard = ({ post }) => {
                             {post.user_name}
                         </h3>
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
-                            {post.created_at ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true }) : 'Just now'}
+                            {post.created_at && formatDate(post.created_at) ? formatDistanceToNow(formatDate(post.created_at), { addSuffix: true }) : 'Just now'}
                             <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
                             <span className="text-emerald-500 font-bold">
                                 Guardian Lvl 1
@@ -157,6 +167,31 @@ const PostCard = ({ post }) => {
                     </div>
                 </div>
             )}
+
+            {/* Leaf Image & Health Status */}
+            {(post.leaf_image_url || post.leaf_health_status) && (
+                <div className="px-4 pb-2 pt-2 animate-fade-in">
+                    <div className={`flex items-center gap-3 p-3 rounded-2xl border ${post.is_leaf_healthy ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100'}`}>
+                        {post.leaf_image_url && (
+                            <img src={post.leaf_image_url} alt="Scanned Leaf" className="w-12 h-12 rounded-xl object-cover border border-white shadow-sm flex-shrink-0" />
+                        )}
+                        <div className="flex-1">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                                <Scan className={`w-3.5 h-3.5 ${post.is_leaf_healthy ? 'text-emerald-500' : 'text-amber-500'}`} />
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${post.is_leaf_healthy ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                    Leaf Health Scan
+                                </span>
+                            </div>
+                            {post.leaf_health_status && (
+                                <p className={`text-xs font-bold leading-tight ${post.is_leaf_healthy ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                    {post.leaf_health_status}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {}
             <div className="px-4 pt-4 flex items-center justify-between">
                 <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -215,7 +250,7 @@ const PostCard = ({ post }) => {
                                 <div className="bg-white p-2.5 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 flex-1 relative">
                                     <div className="flex justify-between items-center mb-0.5">
                                         <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{comment.user_name}</span>
-                                        <span className="text-[8px] font-bold text-slate-400 uppercase">{comment.created_at ? formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }) : 'now'}</span>
+                                        <span className="text-[8px] font-bold text-slate-400 uppercase">{comment.created_at && formatDate(comment.created_at) ? formatDistanceToNow(formatDate(comment.created_at), { addSuffix: true }) : 'now'}</span>
                                     </div>
                                     <p className="text-xs text-slate-600 leading-normal">{comment.text}</p>
                                 </div>

@@ -47,6 +47,9 @@ CREATE TABLE IF NOT EXISTS posts (
     ai_species VARCHAR(255),
     is_ai_verified BOOLEAN DEFAULT FALSE,
     upvotes_count INT DEFAULT 0,
+    leaf_image_url TEXT,
+    leaf_health_status VARCHAR(50),
+    is_leaf_healthy BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(uid),
     FOREIGN KEY (tree_id) REFERENCES trees(id)

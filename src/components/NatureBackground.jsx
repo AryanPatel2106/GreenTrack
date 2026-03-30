@@ -2,7 +2,7 @@ import React from 'react';
 const NatureBackground = () => {
     return (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none opacity-20">
-            {}
+            { }
             <div className="absolute -top-10 -left-10 w-64 h-64 text-emerald-800 animate-sway origin-top-left opacity-30">
                 <svg viewBox="0 0 200 200" className="w-full h-full fill-current">
                     <path d="M0,0 Q50,10 100,80 T180,150" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -11,7 +11,7 @@ const NatureBackground = () => {
                     <circle cx="180" cy="150" r="12" />
                 </svg>
             </div>
-            {}
+            { }
             <div className="absolute -bottom-20 -right-20 w-80 h-80 text-emerald-900 animate-sway-slow origin-bottom-right opacity-20">
                 <svg viewBox="0 0 200 200" className="w-full h-full fill-current">
                     <path d="M200,200 Q150,180 100,100 T20,20" stroke="currentColor" strokeWidth="3" fill="none" />
@@ -20,7 +20,7 @@ const NatureBackground = () => {
                     <ellipse cx="30" cy="30" rx="8" ry="15" transform="rotate(-60, 30, 30)" />
                 </svg>
             </div>
-            {}
+            { }
             <div className="absolute top-1/4 right-[10%] w-8 h-8 text-emerald-500 animate-float-leaf opacity-40">
                 <svg viewBox="0 0 24 24" className="w-full h-full fill-current">
                     <path d="M17,8C8,10 5,16 5,16C5,16 11,15 15,9C17,6 18,2 18,2C18,2 16,6 17,8Z" />
