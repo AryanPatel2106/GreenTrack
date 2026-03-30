@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const cloudinary = require('cloudinary').v2;
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config(); // Vercel uses environment variables
 
 const app = express();
 app.use(cors());
