@@ -24,13 +24,10 @@ dist-ssr
 # Secrets
 .env
 .env.local
-*.json
-!package.json
-!composer.json
-!serviceAccountKey.json.example
 
-# Firebase
-serviceAccountKey.json
+# Firebase Service Account (use FIREBASE_SERVICE_ACCOUNT env var on Vercel)
+server/serviceAccountKey.json
+
 
 # Local Uploads
 server/uploads/

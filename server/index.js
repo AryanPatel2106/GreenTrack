@@ -13,26 +13,25 @@ const path = require('path');
 
 let db = null;
 // Initialize Firebase Admin
+// Try env var first (Vercel production), then fall back to file (local dev)
 try {
-    const serviceAccount = require('./serviceAccountKey.json');
+    let serviceAccount;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        console.log("Firebase Admin: using FIREBASE_SERVICE_ACCOUNT env var");
+    } else {
+        serviceAccount = require('./serviceAccountKey.json');
+        console.log("Firebase Admin: using serviceAccountKey.json file");
+    }
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
     });
     db = admin.firestore();
-    console.log("Firebase Admin initialized with serviceAccountKey.json");
+    console.log("Firebase Admin initialized successfully");
 } catch (e) {
-    console.warn("Could not load serviceAccountKey.json, trying default credentials...", e.message);
-    try {
-        admin.initializeApp({
-            credential: admin.credential.applicationDefault(),
-            projectId: process.env.VITE_FIREBASE_PROJECT_ID
-        });
-        db = admin.firestore();
-        console.log("Firebase Admin initialized with applicationDefault");
-    } catch (err) {
-        console.warn("Firebase Admin failed to initialize entirely. Set up serviceAccountKey.json.");
-    }
+    console.error("Firebase Admin FAILED to initialize:", e.message);
 }
+
 
 // Cloudinary Configuration
 cloudinary.config({
